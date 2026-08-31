@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>オンラインオリパ 画面モック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================
+   デザイン方針
+   - 配色は「墨・朱・金・藍」。トレカの箔押しを想起させるが、
+     グラデーションは演出Rankの表現にだけ使い、装飾には使わない。
+   - 見出しは明朝、本文はゴシック。くじ引きの土着的な質感を出しつつ、
+     数値情報はゴシックで読みやすさを優先する。
+   - 残口数メーターを共通の構造要素とする。装飾ではなく在庫情報。
+   =========================================================== */
+:root{
+  --sumi:#12141c;        /* base */
+  --sumi-2:#1a1e2a;      /* surface */
+  --sumi-3:#242938;      /* raised */
+  --kinari:#f2efe7;      /* text */
+  --kinari-dim:#9aa0b0;  /* muted text */
+  --aka:#e2483f;         /* accent / 当たり */
+  --kin:#c9a227;         /* レア */
+  --ai:#3a6ea5;          /* 情報 */
+  --midori:#3f8f6d;      /* 成功 */
+  --line:#2e3344;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--sumi);
+  color:var(--kinari);
+  font-family:"Zen Kaku Gothic New",system-ui,sans-serif;
+  font-size:15px;line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.mincho{font-family:"Shippori Mincho B1",serif;font-weight:700;letter-spacing:.02em}
+
+/* ---------- 全体レイアウト ---------- */
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+.rail{
+  border-right:1px solid var(--line);background:var(--sumi-2);
+  padding:22px 0 40px;position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.rail h1{font-size:17px;margin:0 20px 4px;line-height:1.4}
+.rail .sub{margin:0 20px 20px;font-size:12px;color:var(--kinari-dim)}
+.rail .group{margin:18px 0 6px;padding:0 20px;font-size:11px;color:var(--kinari-dim);letter-spacing:.08em}
+.rail button{
+  display:block;width:100%;text-align:left;background:none;border:0;color:var(--kinari);
+  font:inherit;font-size:13.5px;padding:7px 20px;cursor:pointer;border-left:2px solid transparent;
+}
+.rail button:hover{background:#202533}
+.rail button[aria-current="true"]{border-left-color:var(--aka);background:#202533;font-weight:700}
+.rail button .id{color:var(--kinari-dim);font-size:11px;margin-right:7px}
+.rail button:focus-visible{outline:2px solid var(--kin);outline-offset:-2px}
+
+.stage{padding:32px 40px 80px;overflow-x:auto}
+.stage-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.stage-head h2{font-size:22px;margin:0}
+.stage-head .code{font-size:12px;color:var(--kinari-dim)}
+.stage-note{color:var(--kinari-dim);font-size:13.5px;max-width:62ch;margin:0 0 26px}
+.stage-note b{color:var(--kinari);font-weight:500}
+
+/* ---------- スマホ枠 ---------- */
+.phone{
+  width:390px;border:1px solid var(--line);border-radius:26px;background:var(--sumi-2);
+  overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45);
+}
+.phone .bar{
+  height:30px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;font-size:11px;color:var(--kinari-dim);border-bottom:1px solid var(--line);
+}
+.screen{height:720px;overflow-y:auto;position:relative}
+.screen::-webkit-scrollbar{width:5px}
+.screen::-webkit-scrollbar-thumb{background:var(--sumi-3);border-radius:3px}
+.pad{padding:16px}
+
+/* ---------- 汎用パーツ ---------- */
+.appbar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--sumi-2);z-index:5;
+}
+.appbar .title{font-family:"Shippori Mincho B1",serif;font-size:16px;font-weight:700}
+.bal{font-size:12px;color:var(--kinari-dim);text-align:right;line-height:1.45}
+.bal b{display:block;color:var(--kin);font-size:15px;font-weight:700}
+
+.card{background:var(--sumi-3);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.thumb{height:120px;background:linear-gradient(135deg,#2b3350,#1a1e2a 60%);position:relative;display:flex;align-items:flex-end;padding:10px}
+.thumb .rare{font-family:"Shippori Mincho B1",serif;font-size:26px;color:rgba(242,239,231,.22);position:absolute;top:8px;right:12px}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:3px;border:1px solid currentColor;line-height:1.5}
+.t-aka{color:var(--aka)} .t-kin{color:var(--kin)} .t-ai{color:var(--ai)} .t-dim{color:var(--kinari-dim)}
+
+/* 残口数メーター：在庫の情報表現 */
+.meter{display:flex;gap:2px;height:5px;margin:9px 0 5px}
+.meter i{flex:1;background:var(--sumi);border-radius:1px}
+.meter i.on{background:var(--kin)}
+.meter-cap{display:flex;justify-content:space-between;font-size:11.5px;color:var(--kinari-dim)}
+.meter-cap b{color:var(--kinari);font-weight:500}
+
+.btn{
+  display:block;width:100%;padding:13px;border:0;border-radius:var(--r);
+  font:inherit;font-weight:700;font-size:15px;cursor:pointer;background:var(--aka);color:#fff;
+}
+.btn:focus-visible{outline:2px solid var(--kin);outline-offset:2px}
+.btn.ghost{background:transparent;color:var(--kinari);border:1px solid var(--line)}
+.btn.gold{background:var(--kin);color:#22200f}
+.btn:disabled{background:var(--sumi-3);color:var(--kinari-dim);cursor:not-allowed}
+.btn-row{display:flex;gap:10px;margin-top:12px}
+
+.row{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .l{font-size:14px}
+.row .s{font-size:11.5px;color:var(--kinari-dim)}
+.num{font-variant-numeric:tabular-nums}
+
+.sec{margin:22px 0 9px;font-family:"Shippori Mincho B1",serif;font-size:14.5px}
+.notice{border-left:2px solid var(--ai);padding:9px 12px;background:#1a1e2a;font-size:12.5px;color:var(--kinari-dim);border-radius:0 4px 4px 0}
+.notice b{color:var(--kinari);font-weight:500}
+
+table.rate{width:100%;border-collapse:collapse;font-size:13px}
+table.rate th,table.rate td{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}
+table.rate th{font-weight:500;color:var(--kinari-dim);font-size:11.5px}
+table.rate td.n{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- 演出 ---------- */
+.stagebox{
+  height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;position:relative;overflow:hidden;background:#0b0d14;
+}
+.orb{width:170px;height:170px;border-radius:50%;position:relative;display:grid;place-items:center;transition:box-shadow .4s}
+.orb::after{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  border:2px solid currentColor;animation:pulse 1.6s ease-out infinite;
+}
+@keyframes pulse{0%{transform:scale(.82);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+.orb .lbl{font-family:"Shippori Mincho B1",serif;font-size:15px;color:var(--kinari)}
+.rank-normal{color:var(--ai);box-shadow:0 0 60px -10px var(--ai)}
+.rank-chance{color:var(--aka);box-shadow:0 0 70px -6px var(--aka)}
+.rank-fever{color:var(--kin);box-shadow:0 0 80px -4px var(--kin)}
+.rank-rainbow{color:#fff;box-shadow:0 0 90px -2px #b06cf0}
+.rank-rainbow::after{border-color:transparent;background:conic-gradient(#e2483f,#c9a227,#3f8f6d,#3a6ea5,#b06cf0,#e2483f);
+  -webkit-mask:radial-gradient(circle,transparent 61%,#000 63%);mask:radial-gradient(circle,transparent 61%,#000 63%)}
+.rank-pick{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 16px}
+.rank-pick button{background:var(--sumi-3);border:1px solid var(--line);color:var(--kinari);font:inherit;font-size:12px;padding:6px 11px;border-radius:99px;cursor:pointer}
+.rank-pick button[aria-pressed="true"]{border-color:var(--kin);color:var(--kin)}
+.skip{position:absolute;top:14px;right:14px;background:rgba(0,0,0,.4);border:1px solid var(--line);color:var(--kinari-dim);font:inherit;font-size:12px;padding:6px 12px;border-radius:99px;cursor:pointer}
+
+/* 10連結果グリッド */
+.grid10{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.cell{aspect-ratio:5/7;border-radius:5px;background:var(--sumi-3);border:1px solid var(--line);display:flex;align-items:flex-end;justify-content:center;padding:5px;font-size:10.5px;color:var(--kinari-dim);text-align:center}
+.cell.hit{border-color:var(--kin);background:linear-gradient(160deg,#3a3320,#1a1e2a);color:var(--kin)}
+.cell.top{border-color:#b06cf0;background:linear-gradient(160deg,#3a2748,#1a1e2a);color:#dcbcff}
+
+/* ---------- 管理画面（PC想定） ---------- */
+.desk{border:1px solid var(--line);border-radius:8px;background:var(--sumi-2);overflow:hidden;max-width:1000px}
+.desk .top{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);font-size:13px}
+.desk .body{padding:20px}
+.form{display:grid;grid-template-columns:170px 1fr;gap:12px 18px;align-items:center;font-size:13.5px}
+.form label{color:var(--kinari-dim)}
+.inp{background:var(--sumi);border:1px solid var(--line);color:var(--kinari);border-radius:5px;padding:8px 10px;font:inherit;font-size:13.5px;width:100%}
+table.grid{width:100%;border-collapse:collapse;font-size:13px}
+table.grid th,table.grid td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left}
+table.grid th{color:var(--kinari-dim);font-weight:500;font-size:11.5px}
+table.grid td.n{text-align:right;font-variant-numeric:tabular-nums}
+.ok{color:var(--midori)} .warn{color:var(--aka)}
+
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  .stage{padding:22px 18px 60px}
+  .phone{width:100%;max-width:390px}
+}
+@media (prefers-reduced-motion:reduce){
+  .orb::after{animation:none;opacity:.5;transform:scale(1.1)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<nav class="rail">
+  <h1>オンラインオリパ</h1>
+  <p class="sub">画面モック v0.1 / 要件定義書 v2.3 準拠</p>
+
+  <p class="group">利用者画面</p>
+  <button data-s="s111" aria-current="true"><span class="id">111</span>ガチャ一覧</button>
+  <button data-s="s112"><span class="id">112</span>ガチャ詳細</button>
+  <button data-s="s113"><span class="id">113</span>演出再生</button>
+  <button data-s="s114"><span class="id">114</span>抽選結果（10連）</button>
+  <button data-s="s121"><span class="id">121</span>ポイント購入</button>
+  <button data-s="s122"><span class="id">122</span>ポイント履歴</button>
+  <button data-s="s132"><span class="id">132</span>獲得カード</button>
+  <button data-s="s133"><span class="id">133</span>発送申請</button>
+  <button data-s="s141"><span class="id">141</span>提供割合・特商法</button>
+
+  <p class="group">管理画面</p>
+  <button data-s="s212"><span class="id">212</span>ガチャ編集</button>
+  <button data-s="s241"><span class="id">241</span>発送管理</button>
+  <button data-s="s231"><span class="id">231</span>ポイント調整の承認</button>
+</nav>
+
+<main class="stage" id="stage"></main>
+</div>
+
+<script>
+/* ダミーデータ。実データではない */
+const G = {name:"蒼海の覇者 第7弾", cost:4000, refund:2800, total:1000, left:312};
+
+const meter = (left,total,seg=24)=>{
+  const on = Math.max(1, Math.round(left/total*seg));
+  return `<div class="meter">${Array.from({length:seg},(_,i)=>`<i class="${i<on?'on':''}"></i>`).join("")}</div>
+  <div class="meter-cap"><span>残り <b>${left}</b> 口 / 全${total}口</span><span>1口 ${G.cost.toLocaleString()}pt</span></div>`;
+};
+
+const appbar = (t)=>`<div class="appbar"><span class="title">${t}</span>
+  <span class="bal">保有ポイント<b class="num">32,800</b></span></div>`;
+
+const phone = (inner)=>`<div class="phone"><div class="bar"><span>9:41</span><span>オリパ</span></div>
+  <div class="screen">${inner}</div></div>`;
+
+/* ---------------- 画面定義 ---------------- */
+const S = {};
+
+S.s111 = {
+  t:"ガチャ一覧", note:"残口数を各カードに常時表示する。<b>売り切れ間近が一目でわかること</b>が回転率に効くため、サムネイルより在庫の視認性を優先した。",
+  html: phone(appbar("オリパ一覧") + `<div class="pad">
+    <div class="card" style="margin-bottom:14px">
+      <div class="thumb"><span class="rare">SS</span><span class="tag t-aka">残りわずか</span></div>
+      <div class="pad">
+        <div class="mincho" style="font-size:16px">蒼海の覇者 第7弾</div>
+        <p class="s" style="margin:4px 0 0;color:var(--kinari-dim);font-size:12px">最高賞：SS賞「深淵のリヴァイア」1口封入</p>
+        ${meter(312,1000)}
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="thumb" style="background:linear-gradient(135deg,#3a2a2a,#1a1e2a 60%)"><span class="rare">S</span></div>
+      <div class="pad">
+        <div class="mincho" style="font-size:16px">輝光アリーナ 廉価版</div>
+        <p class="s" style="margin:4px 0 0;color:var(--kinari-dim);font-size:12px">1口 1,000pt / ハズレ時 700pt還元</p>
+        ${meter(1840,2000)}
+      </div>
+    </div>
+    <div class="card">
+      <div class="thumb" style="background:linear-gradient(135deg,#2a3a30,#1a1e2a 60%)"><span class="rare">A</span></div>
+      <div class="pad">
+        <div class="mincho" style="font-size:16px">旧世代 復刻セレクション</div>
+        <p class="s" style="margin:4px 0 0;color:var(--kinari-dim);font-size:12px">絶版カード中心の構成</p>
+        ${meter(94,500)}
+      </div>
+    </div>
+  </div>`)
+};
+
+S.s112 = {
+  t:"ガチャ詳細", note:"提供割合の表示は法令上の要求（NF-L01）。<b>引くボタンより上に置き、折りたたまない。</b>ハズレ枠も1行として明示する。",
+  html: phone(appbar("蒼海の覇者 第7弾") + `<div class="pad">
+    <div class="card"><div class="thumb" style="height:150px"><span class="rare">SS</span></div></div>
+    <div style="margin-top:14px">${meter(312,1000)}</div>
+
+    <p class="sec">封入内容と提供割合</p>
+    <table class="rate">
+      <tr><th>賞</th><th>カード</th><th class="n" style="text-align:right">口数</th><th class="n" style="text-align:right">割合</th></tr>
+      <tr><td><span class="tag t-kin">SS</span></td><td>深淵のリヴァイア</td><td class="n">1</td><td class="n">0.10%</td></tr>
+      <tr><td><span class="tag t-kin">S</span></td><td>白銀の航跡 ほか</td><td class="n">5</td><td class="n">0.50%</td></tr>
+      <tr><td><span class="tag t-aka">A</span></td><td>海淵シリーズ</td><td class="n">30</td><td class="n">3.00%</td></tr>
+      <tr><td><span class="tag t-ai">B</span></td><td>汎用レア</td><td class="n">120</td><td class="n">12.00%</td></tr>
+      <tr><td><span class="tag t-dim">ハズレ</span></td><td>2,800pt還元</td><td class="n">844</td><td class="n">84.40%</td></tr>
+    </table>
+
+    <p class="notice" style="margin-top:14px">ハズレの場合、消費した4,000ptの70%にあたる<b>2,800pt</b>を還元します。還元ポイントはガチャの購入にのみ使用でき、<b>現金への交換はできません</b>。演出の派手さは当選を示すものではありません。</p>
+
+    <div class="btn-row"><button class="btn">1口 引く</button><button class="btn gold">10口 引く</button></div>
+    <p style="font-size:11.5px;color:var(--kinari-dim);text-align:center;margin-top:8px">消費 4,000pt / 40,000pt</p>
+  </div>`)
+};
+
+S.s113 = {
+  t:"演出再生", note:"APIの応答を受け取ってから再生を開始する（R-03）。動画が再生できない端末では静止画に自動で切り替える（F-135）。下のボタンで4段階のRankを切り替えられる。",
+  html:`<div class="phone"><div class="bar"><span>9:41</span><span>オリパ</span></div>
+    <div class="screen" style="padding:0">
+      <div class="stagebox" style="height:720px">
+        <button class="skip">スキップ</button>
+        <div class="orb rank-chance" id="orb"><span class="lbl" id="orbLbl">チャンス</span></div>
+        <p style="color:var(--kinari-dim);font-size:12.5px;margin:0">開封しています</p>
+        <div class="rank-pick" id="ranks" style="position:absolute;bottom:26px">
+          <button data-r="normal">通常</button>
+          <button data-r="chance" aria-pressed="true">チャンス</button>
+          <button data-r="fever">フィーバー</button>
+          <button data-r="rainbow">レインボー</button>
+        </div>
+      </div>
+    </div></div>`
+};
+
+S.s114 = {
+  t:"抽選結果（10連）", note:"10本の動画を順に流さず、<b>最上位Rankの演出を1本だけ再生してから結果を一覧表示</b>する（F-136）。ハズレ枠はカードにならないため、10連でも実物は数枚しか出ない。",
+  html: phone(appbar("結果") + `<div class="pad">
+    <p class="sec" style="margin-top:4px">10口の結果</p>
+    <div class="grid10">
+      <div class="cell top">SS賞</div>
+      <div class="cell">2,800pt</div>
+      <div class="cell">2,800pt</div>
+      <div class="cell hit">B賞</div>
+      <div class="cell">2,800pt</div>
+      <div class="cell">2,800pt</div>
+      <div class="cell">2,800pt</div>
+      <div class="cell hit">B賞</div>
+      <div class="cell">2,800pt</div>
+      <div class="cell">2,800pt</div>
+    </div>
+    <div style="margin-top:18px">
+      <div class="row"><span class="l">消費ポイント</span><span class="num">40,000pt</span></div>
+      <div class="row"><span class="l">還元ポイント<span class="s"> ハズレ8口</span></span><span class="num" style="color:var(--kin)">+22,400pt</span></div>
+      <div class="row"><span class="l">獲得カード</span><span class="num">3枚</span></div>
+    </div>
+    <p class="notice" style="margin-top:14px">獲得したカードはマイページに保管されます。発送のご依頼は<b>10枚以上でまとめると送料が無料</b>になります。</p>
+    <div class="btn-row"><button class="btn ghost">個別の演出を見る</button><button class="btn">もう一度引く</button></div>
+  </div>`)
+};
+
+S.s121 = {
+  t:"ポイント購入", note:"有効期限を購入前に明示する（NF-L02c）。金額プランは横並びにせず、<b>単価が同一であること</b>が読み取れる縦並びにした。",
+  html: phone(appbar("ポイント購入") + `<div class="pad">
+    <p class="notice">購入したポイントの有効期限は<b>180日</b>です。期限を過ぎたポイントは失効します。有効期限の延長は行いません。</p>
+    <p class="sec">購入プラン</p>
+    ${[[1000,1000],[5000,5000],[10000,10000],[30000,30000],[50000,50000]].map(([p,y])=>`
+      <div class="row"><span class="l"><b class="num">${p.toLocaleString()}</b> pt<span class="s"> 有効期限 2027-02-27</span></span>
+      <span class="num" style="color:var(--kin)">¥${y.toLocaleString()}</span></div>`).join("")}
+    <p class="sec">支払い方法</p>
+    <div class="row"><span class="l">クレジットカード</span><span class="s">決済代行を経由します</span></div>
+    <button class="btn" style="margin-top:16px">10,000pt を購入する</button>
+    <p style="font-size:11.5px;color:var(--kinari-dim);margin-top:10px">1pt = 1円。ポイントの払い戻しはできません。20歳未満の方は月間の購入上限が適用されます。</p>
+  </div>`)
+};
+
+S.s122 = {
+  t:"ポイント履歴", note:"有償と還元を分けて表示する。ロット管理の実装により<b>失効予定日と金額を先に見せられる</b>のが利点で、失効直前の問い合わせを減らす。",
+  html: phone(appbar("ポイント") + `<div class="pad">
+    <div class="card"><div class="pad">
+      <div class="row" style="border:0;padding:6px 0"><span class="l">購入ポイント</span><span class="num">10,000pt</span></div>
+      <div class="row" style="border:0;padding:6px 0"><span class="l">還元ポイント</span><span class="num">22,800pt</span></div>
+      <div class="row" style="border-top:1px solid var(--line);padding:9px 0 4px"><span class="l" style="color:var(--aka)">直近の失効</span><span class="num" style="color:var(--aka)">2,800pt / 9月14日</span></div>
+    </div></div>
+    <p class="sec">明細</p>
+    ${[["ガチャ 10口","-40,000","","dim"],["還元 ハズレ8口","+22,400","kin",""],["ポイント購入","+10,000","kin",""],["送料","-500","",""],["ガチャ 1口","-4,000","",""],["還元 ハズレ1口","+2,800","kin",""]]
+      .map(([l,v,c])=>`<div class="row"><span class="l">${l}<span class="s"> 8月30日</span></span><span class="num" style="${c==='kin'?'color:var(--kin)':''}">${v}pt</span></div>`).join("")}
+  </div>`)
+};
+
+S.s132 = {
+  t:"獲得カード", note:"発送済みと未申請を混在させない。<b>あと何枚で送料無料か</b>を一覧の時点で示し、まとめ申請を促す。",
+  html: phone(appbar("獲得カード") + `<div class="pad">
+    <p class="notice">未申請 <b>7枚</b>。あと<b>3枚</b>で送料が無料になります。</p>
+    <p class="sec">未申請のカード</p>
+    ${[["深淵のリヴァイア","SS賞","kin"],["白銀の航跡","S賞","kin"],["海淵の守護者","A賞","aka"],["潮流の魔導士","B賞","ai"],["珊瑚の斥候","B賞","ai"],["浅瀬の使い","B賞","ai"],["波間の伝令","B賞","ai"]]
+      .map(([n,r,c])=>`<div class="row"><span class="l">${n}<span class="s"> 8月30日 獲得</span></span><span class="tag t-${c}">${r}</span></div>`).join("")}
+    <button class="btn" style="margin-top:16px">発送を申し込む</button>
+    <p class="sec">発送済み</p>
+    <div class="row"><span class="l">深海の号令<span class="s"> 8月12日 発送 / 追跡 4567-8901-2345</span></span><span class="tag t-dim">発送済</span></div>
+  </div>`)
+};
+
+S.s133 = {
+  t:"発送申請", note:"送料は申請の確定前に試算して表示する（F-146）。<b>試算と実徴収で額が食い違わないよう、同じ計算処理を共有する</b>のが実装上の条件。",
+  html: phone(appbar("発送の申し込み") + `<div class="pad">
+    <p class="sec" style="margin-top:2px">送るカード</p>
+    <div class="row"><span class="l">選択中</span><span class="num">7枚</span></div>
+    <div class="row"><span class="l">配送方法</span><span class="l">追跡・補償付き<span class="s"> 評価額 42,000円のため自動適用</span></span></div>
+
+    <p class="sec">送料</p>
+    <div class="card"><div class="pad">
+      <div class="row" style="border:0;padding:4px 0"><span class="l">送料</span><span class="num" style="color:var(--aka)">500pt</span></div>
+      <p style="font-size:12px;color:var(--kinari-dim);margin:8px 0 0">10枚以上のまとめ発送で無料になります。<b style="color:var(--kinari)">あと3枚</b>。</p>
+    </div></div>
+
+    <p class="sec">お届け先</p>
+    <div class="row"><span class="l">見本 太郎<span class="s"> 〒150-0001 東京都渋谷区神宮前0-0-0</span></span><span class="tag t-dim">変更</span></div>
+
+    <div style="margin-top:18px">
+      <div class="row"><span class="l">支払い後の残高</span><span class="num">32,300pt</span></div>
+    </div>
+    <button class="btn" style="margin-top:14px">500pt を支払って申し込む</button>
+    <button class="btn ghost" style="margin-top:10px">あと3枚たまるまで待つ</button>
+  </div>`)
+};
+
+S.s141 = {
+  t:"提供割合・特商法表記", note:"法令表示のページ。<b>リンクを踏まずに読める深さ</b>に置く。古物商許可番号と、還元ポイントが換金不可である旨をここでも明記する。",
+  html: phone(appbar("表記事項") + `<div class="pad">
+    <p class="sec" style="margin-top:2px">提供割合について</p>
+    <p style="font-size:13px;color:var(--kinari-dim);margin:0">各オリパの賞ごとの提供割合は、購入前に商品ページで確認できます。口数は有限であり、設定した口数の賞は必ず排出されます。演出の内容は当選を示すものではありません。</p>
+
+    <p class="sec">ポイントについて</p>
+    <p style="font-size:13px;color:var(--kinari-dim);margin:0">購入ポイント・還元ポイントとも有効期限は付与日から180日です。いずれのポイントも現金その他への交換、他サービスへの移転はできません。</p>
+
+    <p class="sec">事業者情報</p>
+    ${[["販売事業者","（記入）"],["所在地","（記入）"],["連絡先","（記入）"],["古物商許可番号","（記入）"],["販売価格","各商品ページに表示"],["支払方法","クレジットカード"],["引渡時期","発送申請から5営業日以内"],["返品","商品の性質上、購入後の返品はできません"]]
+      .map(([k,v])=>`<div class="row"><span class="l" style="color:var(--kinari-dim);font-size:13px">${k}</span><span class="l" style="font-size:13px;text-align:right">${v}</span></div>`).join("")}
+  </div>`)
+};
+
+/* ---------------- 管理画面 ---------------- */
+S.s212 = {
+  t:"ガチャ編集（管理）", note:"賞ごとの口数の合計と総口数の一致を、<b>保存時ではなく入力中に検証する</b>（F-216）。ハズレ枠も1行として登録するため、合計が必ず総口数に一致する。",
+  html:`<div class="desk">
+    <div class="top"><span>ガチャ編集 — 蒼海の覇者 第7弾</span><span class="tag t-dim">下書き</span></div>
+    <div class="body">
+      <div class="form">
+        <label for="gn">ガチャ名</label><input id="gn" class="inp" value="蒼海の覇者 第7弾">
+        <label for="gc">1口の消費ポイント</label><input id="gc" class="inp" value="4,000" style="max-width:180px">
+        <label for="gt">総口数</label><input id="gt" class="inp" value="1,000" style="max-width:180px">
+        <label for="gr">還元率</label><input id="gr" class="inp" value="70%" style="max-width:180px">
+      </div>
+
+      <p class="sec">封入設定</p>
+      <table class="grid">
+        <tr><th>賞</th><th>カード</th><th class="n">口数</th><th class="n">提供割合</th><th class="n">演出Rank</th></tr>
+        <tr><td>SS賞</td><td>深淵のリヴァイア</td><td class="n">1</td><td class="n">0.10%</td><td class="n">レインボー</td></tr>
+        <tr><td>S賞</td><td>白銀の航跡 ほか4種</td><td class="n">5</td><td class="n">0.50%</td><td class="n">フィーバー</td></tr>
+        <tr><td>A賞</td><td>海淵シリーズ 12種</td><td class="n">30</td><td class="n">3.00%</td><td class="n">チャンス</td></tr>
+        <tr><td>B賞</td><td>汎用レア 40種</td><td class="n">120</td><td class="n">12.00%</td><td class="n">チャンス</td></tr>
+        <tr><td>ハズレ</td><td><span style="color:var(--kinari-dim)">カードなし / 2,800pt還元</span></td><td class="n">844</td><td class="n">84.40%</td><td class="n">通常</td></tr>
+        <tr><td colspan="2" style="color:var(--kinari-dim)">合計</td><td class="n ok">1,000</td><td class="n ok">100.00%</td><td class="n ok">総口数と一致</td></tr>
+      </table>
+
+      <p class="notice" style="margin-top:16px">公開すると封入内容は変更できません。カードの実在庫は公開時に引き当てられます。</p>
+      <div style="display:flex;gap:10px;margin-top:16px;max-width:420px">
+        <button class="btn ghost">下書きを保存</button><button class="btn">公開する</button>
+      </div>
+    </div>
+  </div>`
+};
+
+S.s241 = {
+  t:"発送管理（管理）", note:"1件ずつ開かずに処理できることを優先した。<b>評価額により配送方法が自動で決まる</b>ため、担当者が判断する余地を残さない。",
+  html:`<div class="desk">
+    <div class="top"><span>発送管理</span><span>申請中 12件 / 発送準備中 4件</span></div>
+    <div class="body">
+      <table class="grid">
+        <tr><th>申請日</th><th>ユーザー</th><th class="n">枚数</th><th class="n">評価額</th><th>配送方法</th><th class="n">送料</th><th>状態</th></tr>
+        <tr><td>08-30</td><td>u_10241</td><td class="n">7</td><td class="n">42,000円</td><td class="warn">追跡・補償付き</td><td class="n">500pt</td><td>申請中</td></tr>
+        <tr><td>08-30</td><td>u_09877</td><td class="n">12</td><td class="n">8,400円</td><td>ネコポス</td><td class="n">0pt</td><td>申請中</td></tr>
+        <tr><td>08-29</td><td>u_10102</td><td class="n">2</td><td class="n">1,200円</td><td>ネコポス</td><td class="n">500pt</td><td>準備中</td></tr>
+        <tr><td>08-29</td><td>u_08890</td><td class="n">31</td><td class="n">310,000円</td><td class="warn">補償上限を超過</td><td class="n">0pt</td><td class="warn">要判断</td></tr>
+      </table>
+      <div style="display:flex;gap:10px;margin-top:18px;max-width:520px">
+        <button class="btn ghost">発送先をCSVで出力</button><button class="btn">選択した申請を発送済みにする</button>
+      </div>
+      <p class="notice" style="margin-top:16px">評価額が配送業者の補償上限を超える申請は<b>要判断</b>として区別されます。分割発送または個別対応を選んでください。</p>
+    </div>
+  </div>`
+};
+
+S.s231 = {
+  t:"ポイント調整の承認（管理）", note:"申請と承認を分ける（F-232b・NF-S13）。<b>申請者本人の承認ボタンは無効化する</b>。2名体制ではPOが承認者になる。",
+  html:`<div class="desk">
+    <div class="top"><span>ポイント調整</span><span>承認待ち 2件</span></div>
+    <div class="body">
+      <table class="grid">
+        <tr><th>申請日時</th><th>対象</th><th>種別</th><th class="n">増減</th><th>理由</th><th>申請者</th><th>操作</th></tr>
+        <tr><td>08-31 10:12</td><td>u_10241</td><td>還元</td><td class="n">+4,000</td><td>抽選エラーの補填</td><td>担当A</td>
+          <td><button class="btn" style="padding:5px 12px;font-size:12px;width:auto">承認</button></td></tr>
+        <tr><td>08-31 09:40</td><td>u_09877</td><td>有償</td><td class="n">+10,000</td><td>決済二重計上の是正</td><td>担当B</td>
+          <td><button class="btn" style="padding:5px 12px;font-size:12px;width:auto" disabled>承認</button>
+          <span class="s" style="color:var(--kinari-dim);font-size:11px;margin-left:6px">申請者本人のため不可</span></td></tr>
+      </table>
+      <p class="notice" style="margin-top:16px">有償ポイントの発行は資金決済法上の負債にあたります。承認された調整はすべて台帳に記録され、後から取り消せません。</p>
+    </div>
+  </div>`
+};
+
+/* ---------------- 表示制御 ---------------- */
+const stage = document.getElementById("stage");
+const btns = [...document.querySelectorAll(".rail button")];
+
+function show(key){
+  const s = S[key];
+  stage.innerHTML = `<div class="stage-head"><h2>${s.t}</h2><span class="code">SCR-${key.slice(1)}</span></div>
+    <p class="stage-note">${s.note}</p>${s.html}`;
+  btns.forEach(b=>b.setAttribute("aria-current", b.dataset.s===key ? "true":"false"));
+  if(key==="s113") bindRanks();
+}
+btns.forEach(b=>b.addEventListener("click",()=>show(b.dataset.s)));
+
+function bindRanks(){
+  const orb=document.getElementById("orb"), lbl=document.getElementById("orbLbl");
+  const names={normal:"通常",chance:"チャンス",fever:"フィーバー",rainbow:"レインボー"};
+  document.querySelectorAll("#ranks button").forEach(b=>{
+    b.addEventListener("click",()=>{
+      document.querySelectorAll("#ranks button").forEach(x=>x.setAttribute("aria-pressed","false"));
+      b.setAttribute("aria-pressed","true");
+      orb.className = "orb rank-"+b.dataset.r;
+      lbl.textContent = names[b.dataset.r];
+    });
+  });
+}
+show("s111");
+</script>
+</body>
+</html>
